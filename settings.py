@@ -364,12 +364,15 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
         
         if msg_type == "text":
             await query.edit_message_text(
-                "Please send the new welcome message text.\n"
-                "Use {user} to mention the new member.\n"
-                "Send /cancel to abort.",
+                to_monospace_uppercase(
+                    "Please send the new welcome message text.\n"
+                    "Use {user} to mention the new member.\n"
+                    "Send /cancel to abort."
+                ),
                 reply_markup=None
             )
             context.user_data['waiting_for_welcome_msg'] = True
+            logger.info(f"Set waiting_for_welcome_msg=True for user {query.from_user.id}")
         else:
             media_names = {
                 'photo': 'photo/image',
@@ -818,11 +821,15 @@ async def show_settings_panel_from_callback(query, context, settings):
 
 async def handle_welcome_message_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle new welcome message input (text)"""
-    if not context.user_data.get('waiting_for_welcome_msg'):
+    is_waiting = context.user_data.get('waiting_for_welcome_msg')
+    logger.info(f"handle_welcome_message_input called, waiting={is_waiting}, text={update.message.text if update.message else 'None'}")
+    
+    if not is_waiting:
         return
     
     try:
         new_message = update.message.text
+        logger.info(f"Processing welcome message: {new_message[:50]}...")
         
         if new_message == "/cancel":
             await update.message.reply_text(to_monospace_uppercase("Cancelled."))
