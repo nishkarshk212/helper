@@ -46,6 +46,12 @@ from user_management import (
     handle_permission_toggle,
     handle_confirm_promote
 )
+from blocked_words import (
+    handle_blockword_command,
+    handle_unblockword_command,
+    handle_blockedwords_command,
+    check_blocked_words
+)
 from filters import (
     handle_filter_command,
     handle_filters_list,
@@ -92,6 +98,10 @@ async def help_command(update: Update, context):
         "/id - Get user ID (reply to message or use user ID)\n"
         "/info - Get detailed user information (reply to message)\n"
         "/admins - List all custom admins with permissions\n\n"
+        "<b>Content Moderation:</b>\n"
+        "/blockword <word> - Block a word/phrase (deletes messages containing it)\n"
+        "/unblockword <word> - Remove a blocked word\n"
+        "/blockedwords - List all blocked words\n\n"
         "<b>Filters (Auto-reply):</b>\n"
         "/filter &lt;trigger&gt; - Add filter (reply to message with content)\n"
         "/filters - List all chat filters\n"
@@ -151,6 +161,9 @@ def main():
     application.add_handler(CommandHandler("id", handle_id_command))
     application.add_handler(CommandHandler("info", handle_info_command))
     application.add_handler(CommandHandler("admins", handle_admins_command))
+    application.add_handler(CommandHandler("blockword", handle_blockword_command))
+    application.add_handler(CommandHandler("unblockword", handle_unblockword_command))
+    application.add_handler(CommandHandler("blockedwords", handle_blockedwords_command))
     application.add_handler(CommandHandler("filter", handle_filter_command))
     application.add_handler(CommandHandler("filters", handle_filters_list))
     application.add_handler(CommandHandler("stop", handle_stop_filter))
@@ -171,6 +184,13 @@ def main():
         filters.StatusUpdate.LEFT_CHAT_MEMBER,
         handle_left_member
     ))
+    
+    # Blocked words checker (MUST be before other text handlers)
+    application.add_handler(MessageHandler(
+        filters.TEXT | filters.CAPTION,
+        check_blocked_words
+    ))
+    
     application.add_handler(MessageHandler(
         filters.PHOTO | filters.VIDEO | filters.Document.ALL,
         handle_media_message

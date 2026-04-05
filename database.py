@@ -41,6 +41,7 @@ class GroupSettings(Base):
     user_warns = Column(Text, default="{}")  # JSON: {user_id: warn_count}
     muted_users = Column(Text, default="[]")  # JSON: [user_ids]
     chat_filters = Column(Text, default="{}")  # JSON: {trigger: {type: "text/sticker/photo/video", content: "...", file_id: "..."}}
+    blocked_words = Column(Text, default="[]")  # JSON: [blocked words/phrases]
     
     def __repr__(self):
         return f"<GroupSettings(chat_id={self.chat_id})>"
@@ -152,6 +153,11 @@ def migrate_database():
         
         try:
             conn.execute(text("ALTER TABLE group_settings ADD COLUMN chat_filters TEXT DEFAULT '{}'"))
+        except:
+            pass
+        
+        try:
+            conn.execute(text("ALTER TABLE group_settings ADD COLUMN blocked_words TEXT DEFAULT '[]'"))
         except:
             pass
         
