@@ -16,6 +16,9 @@ from telegram.ext import (
 # Load environment variables from .env file
 load_dotenv()
 
+# Get log group ID
+LOG_GROUP_ID = os.getenv('LOG_GROUP_ID')
+
 from settings import (
     show_settings_panel,
     handle_settings_callback,
@@ -147,6 +150,22 @@ async def help_command(update: Update, context):
 async def error_handler(update: object, context) -> None:
     """Log errors caused by updates."""
     logger.error("Exception while handling an update:", exc_info=context.error)
+    
+    # Send error to log group if configured
+    if LOG_GROUP_ID:
+        try:
+            error_message = (
+                f"❌ <b>Error Occurred</b>\n\n"
+                f"<b>Error:</b> {context.error}\n"
+                f"<b>Update:</b> {update}\n"
+            )
+            await context.bot.send_message(
+                chat_id=LOG_GROUP_ID,
+                text=error_message,
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            logger.error(f"Failed to send error to log group: {e}")
 
 
 def main():

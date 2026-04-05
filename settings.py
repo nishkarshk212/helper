@@ -6,6 +6,9 @@ from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
 from font import to_monospace_uppercase
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def show_settings_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -818,30 +821,37 @@ async def handle_welcome_message_input(update: Update, context: ContextTypes.DEF
     if not context.user_data.get('waiting_for_welcome_msg'):
         return
     
-    new_message = update.message.text
-    
-    if new_message == "/cancel":
-        await update.message.reply_text(to_monospace_uppercase("Cancelled."))
+    try:
+        new_message = update.message.text
+        
+        if new_message == "/cancel":
+            await update.message.reply_text(to_monospace_uppercase("Cancelled."))
+            context.user_data['waiting_for_welcome_msg'] = False
+            return
+        
+        chat_id = update.effective_chat.id
+        update_group_setting(chat_id, welcome_message=new_message)
+        
+        # Ask about buttons
+        keyboard = [
+            [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons"),
+             InlineKeyboardButton("Skip", callback_data="skip_welcome_buttons")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            to_monospace_uppercase(
+                "Welcome message text saved!\n\n"
+                "Would you like to add inline buttons?"
+            ),
+            reply_markup=reply_markup
+        )
         context.user_data['waiting_for_welcome_msg'] = False
-        return
-    
-    chat_id = update.effective_chat.id
-    update_group_setting(chat_id, welcome_message=new_message)
-    
-    # Ask about buttons
-    keyboard = [
-        [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons"),
-         InlineKeyboardButton("Skip", callback_data="skip_welcome_buttons")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        to_monospace_uppercase(
-            "Welcome message text saved!\n\n"
-            "Would you like to add inline buttons?"
-        ),
-        reply_markup=reply_markup
-    )
-    context.user_data['waiting_for_welcome_msg'] = False
+    except Exception as e:
+        logger.error(f"Error in handle_welcome_message_input: {e}", exc_info=True)
+        await update.message.reply_text(
+            to_monospace_uppercase("❌ An error occurred while saving the welcome message. Please try again.")
+        )
+        context.user_data['waiting_for_welcome_msg'] = False
 
 
 async def handle_goodbye_message_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -849,30 +859,37 @@ async def handle_goodbye_message_input(update: Update, context: ContextTypes.DEF
     if not context.user_data.get('waiting_for_goodbye_msg'):
         return
     
-    new_message = update.message.text
-    
-    if new_message == "/cancel":
-        await update.message.reply_text(to_monospace_uppercase("Cancelled."))
+    try:
+        new_message = update.message.text
+        
+        if new_message == "/cancel":
+            await update.message.reply_text(to_monospace_uppercase("Cancelled."))
+            context.user_data['waiting_for_goodbye_msg'] = False
+            return
+        
+        chat_id = update.effective_chat.id
+        update_group_setting(chat_id, goodbye_message=new_message)
+        
+        # Ask about buttons
+        keyboard = [
+            [InlineKeyboardButton("Add Buttons", callback_data="add_goodbye_buttons"),
+             InlineKeyboardButton("Skip", callback_data="skip_goodbye_buttons")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            to_monospace_uppercase(
+                "Goodbye message text saved!\n\n"
+                "Would you like to add inline buttons?"
+            ),
+            reply_markup=reply_markup
+        )
         context.user_data['waiting_for_goodbye_msg'] = False
-        return
-    
-    chat_id = update.effective_chat.id
-    update_group_setting(chat_id, goodbye_message=new_message)
-    
-    # Ask about buttons
-    keyboard = [
-        [InlineKeyboardButton("Add Buttons", callback_data="add_goodbye_buttons"),
-         InlineKeyboardButton("Skip", callback_data="skip_goodbye_buttons")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        to_monospace_uppercase(
-            "Goodbye message text saved!\n\n"
-            "Would you like to add inline buttons?"
-        ),
-        reply_markup=reply_markup
-    )
-    context.user_data['waiting_for_goodbye_msg'] = False
+    except Exception as e:
+        logger.error(f"Error in handle_goodbye_message_input: {e}", exc_info=True)
+        await update.message.reply_text(
+            to_monospace_uppercase("❌ An error occurred while saving the goodbye message. Please try again.")
+        )
+        context.user_data['waiting_for_goodbye_msg'] = False
 
 
 async def handle_media_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
