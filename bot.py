@@ -4,7 +4,7 @@ Main bot application
 import os
 import logging
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -70,13 +70,23 @@ logger = logging.getLogger(__name__)
 
 async def start(update: Update, context):
     """Send a message when the command /start is issued."""
+    # Create inline keyboard with "Add to Group" button
+    keyboard = [
+        [InlineKeyboardButton(
+            "➕ Add to Group", 
+            url=f"https://t.me/{context.bot.username}?startgroup=true"
+        )]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     await update.message.reply_text(
         "👋 Hi! I'm a Group Management Bot.\n\n"
         "Add me to your group and use /settings to configure group settings.\n\n"
         "<b>Available commands:</b>\n"
         "/settings - Open group settings panel\n"
         "/help - Show help message",
-        parse_mode='HTML'
+        parse_mode='HTML',
+        reply_markup=reply_markup
     )
 
 
