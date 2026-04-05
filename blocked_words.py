@@ -129,41 +129,41 @@ async def check_blocked_words(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         blocked_words = json.loads(settings.blocked_words)
     except:
-        return
-    
-    if not blocked_words:
-        return
-    
-    # Get message text (including caption for media)
-    message_text = ""
-    if update.message.text:
-        message_text = update.message.text.lower()
-    elif update.message.caption:
-        message_text = update.message.caption.lower()
-    
-    if not message_text:
-        return
+        blocked_words = []
     
     # Check if any blocked word is in the message
-    for blocked_word in blocked_words:
-        if blocked_word in message_text:
-            try:
-                # Delete the message
-                await update.message.delete()
-                
-                # Send warning (optional - can be removed if you don't want notifications)
-                warning = await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=f"⚠️ Message deleted: Contains blocked word '{blocked_word}'",
-                )
-                
-                # Auto-delete warning after 5 seconds
-                import asyncio
-                asyncio.create_task(auto_delete_warning(warning, context))
-                
-            except Exception as e:
-                print(f"Error deleting blocked message: {e}")
-            break
+    if blocked_words:
+        # Get message text (including caption for media)
+        message_text = ""
+        if update.message.text:
+            message_text = update.message.text.lower()
+        elif update.message.caption:
+            message_text = update.message.caption.lower()
+        
+        if message_text:
+            for blocked_word in blocked_words:
+                if blocked_word in message_text:
+                    try:
+                        # Delete the message
+                        await update.message.delete()
+                        
+                        # Send warning (optional - can be removed if you don't want notifications)
+                        warning = await context.bot.send_message(
+                            chat_id=update.effective_chat.id,
+                            text=f"⚠️ Message deleted: Contains blocked word '{blocked_word}'",
+                        )
+                        
+                        # Auto-delete warning after 5 seconds
+                        import asyncio
+                        asyncio.create_task(auto_delete_warning(warning, context))
+                        
+                    except Exception as e:
+                        print(f"Error deleting blocked message: {e}")
+                    break
+    
+    # Now check filters (so both blocked words AND filters work)
+    from filters import check_filters
+    await check_filters(update, context)
 
 
 async def auto_delete_warning(message, context):
