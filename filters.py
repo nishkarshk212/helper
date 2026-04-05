@@ -4,6 +4,7 @@ Filter system - Auto-reply to trigger words with custom content
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
+from font import to_monospace_uppercase
 import json
 
 

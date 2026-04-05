@@ -4,6 +4,7 @@ User management features: ban, warn, mute, promote with custom roles and permiss
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
+from font import to_monospace_uppercase
 import json
 
 OWNER_ID = 8791884726  # Group creator ID

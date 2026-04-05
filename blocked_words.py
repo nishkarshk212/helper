@@ -4,6 +4,7 @@ Blocked words feature - Delete messages containing blocked content
 from telegram import Update
 from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
+from font import to_monospace_uppercase
 import json
 
 

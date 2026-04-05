@@ -4,13 +4,14 @@ Settings panel handlers for the Telegram bot
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
+from font import to_monospace_uppercase
 import json
 
 
 async def show_settings_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Display the main settings panel"""
     if not update.effective_chat or update.effective_chat.type not in ['group', 'supergroup']:
-        await update.message.reply_text("This command can only be used in groups.")
+        await update.message.reply_text(to_monospace_uppercase("This command can only be used in groups."))
         return
     
     # Check if user is admin
@@ -20,7 +21,7 @@ async def show_settings_panel(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     
     if chat_member.status not in ['creator', 'administrator']:
-        await update.message.reply_text("Only admins can access settings.")
+        await update.message.reply_text(to_monospace_uppercase("Only admins can access settings."))
         return
     
     chat_id = update.effective_chat.id
@@ -50,9 +51,9 @@ async def show_settings_panel(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    message = (
-        f"⚙️ <b>Group Settings Panel</b>\n\n"
-        f"<b>Current Settings:</b>\n"
+    message = to_monospace_uppercase(
+        f"⚙️ Group Settings Panel\n\n"
+        f"Current Settings:\n"
         f"• Welcome Messages: {'Enabled' if settings.welcome_enabled else 'Disabled'}\n"
         f"• Goodbye Messages: {'Enabled' if settings.goodbye_enabled else 'Disabled'}\n"
         f"• Self-Destruct: {'Enabled' if settings.self_destruct_enabled else 'Disabled'}\n"
@@ -74,7 +75,7 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
     # Check if user is admin
     chat_member = await context.bot.get_chat_member(chat_id, user_id)
     if chat_member.status not in ['creator', 'administrator']:
-        await query.edit_message_text("Only admins can change settings.")
+        await query.edit_message_text(to_monospace_uppercase("Only admins can change settings."))
         return
     
     settings = get_or_create_group(chat_id)
@@ -106,11 +107,13 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
             pass
         
         await query.edit_message_text(
-            f"<b>Welcome Message Settings</b>\n\n"
-            f"<b>Status:</b> {'Enabled' if settings.welcome_enabled else 'Disabled'}\n"
-            f"<b>Type:</b> {msg_type}\n"
-            f"<b>Buttons:</b> {buttons_count} button(s)\n\n"
-            f"Enable/disable welcome messages or edit the message content, media, and buttons.",
+            to_monospace_uppercase(
+                f"Welcome Message Settings\n\n"
+                f"Status: {'Enabled' if settings.welcome_enabled else 'Disabled'}\n"
+                f"Type: {msg_type}\n"
+                f"Buttons: {buttons_count} button(s)\n\n"
+                f"Enable/disable welcome messages or edit the message content, media, and buttons."
+            ),
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
@@ -141,11 +144,13 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
             pass
         
         await query.edit_message_text(
-            f"<b>Goodbye Message Settings</b>\n\n"
-            f"<b>Status:</b> {'Enabled' if settings.goodbye_enabled else 'Disabled'}\n"
-            f"<b>Type:</b> {msg_type}\n"
-            f"<b>Buttons:</b> {buttons_count} button(s)\n\n"
-            f"Enable/disable goodbye messages or edit the message content, media, and buttons.",
+            to_monospace_uppercase(
+                f"Goodbye Message Settings\n\n"
+                f"Status: {'Enabled' if settings.goodbye_enabled else 'Disabled'}\n"
+                f"Type: {msg_type}\n"
+                f"Buttons: {buttons_count} button(s)\n\n"
+                f"Enable/disable goodbye messages or edit the message content, media, and buttons."
+            ),
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
