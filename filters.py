@@ -6,6 +6,9 @@ from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
 from font import to_monospace_uppercase
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_filter_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -224,59 +227,67 @@ async def check_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     message_text = update.message.text.lower().strip()
+    logger.info(f"Checking filters for message: '{message_text}' in chat {chat_id}")
+    logger.info(f"Available filters: {list(filters.keys())}")
     
     # Check each filter trigger
-    if filters:
-        for trigger, filter_data in filters.items():
-            # Check if trigger is in the message (case-insensitive)
-            if trigger in message_text:
-                # Send appropriate response based on type
-                try:
-                    if filter_data['type'] == 'text':
-                        await context.bot.send_message(
-                            chat_id=chat_id,
-                            text=filter_data['content'],
-                            reply_to_message_id=update.message.message_id
-                        )
-                    elif filter_data['type'] == 'sticker':
-                        await context.bot.send_sticker(
-                            chat_id=chat_id,
-                            sticker=filter_data['file_id'],
-                            reply_to_message_id=update.message.message_id
-                        )
-                    elif filter_data['type'] == 'photo':
-                        await context.bot.send_photo(
-                            chat_id=chat_id,
-                            photo=filter_data['file_id'],
-                            caption=filter_data['content'] if filter_data['content'] else None,
-                            reply_to_message_id=update.message.message_id
-                        )
-                    elif filter_data['type'] == 'video':
-                        await context.bot.send_video(
-                            chat_id=chat_id,
-                            video=filter_data['file_id'],
-                            caption=filter_data['content'] if filter_data['content'] else None,
-                            reply_to_message_id=update.message.message_id
-                        )
-                    elif filter_data['type'] == 'document':
-                        await context.bot.send_document(
-                            chat_id=chat_id,
-                            document=filter_data['file_id'],
-                            caption=filter_data['content'] if filter_data['content'] else None,
-                            reply_to_message_id=update.message.message_id
-                        )
-                    elif filter_data['type'] == 'animation':
-                        await context.bot.send_animation(
-                            chat_id=chat_id,
-                            animation=filter_data['file_id'],
-                            caption=filter_data['content'] if filter_data['content'] else None,
-                            reply_to_message_id=update.message.message_id
-                        )
-                except Exception as e:
-                    print(f"Error sending filter response: {e}")
-                
-                # Only trigger once per message (first match)
-                break
+    triggered = False
+    for trigger, filter_data in filters.items():
+        # Check if trigger is in the message (case-insensitive)
+        if trigger in message_text:
+            logger.info(f"Filter triggered! Trigger: '{trigger}', Type: {filter_data['type']}")
+            triggered = True
+            # Send appropriate response based on type
+            try:
+                if filter_data['type'] == 'text':
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=filter_data['content'],
+                        reply_to_message_id=update.message.message_id
+                    )
+                elif filter_data['type'] == 'sticker':
+                    await context.bot.send_sticker(
+                        chat_id=chat_id,
+                        sticker=filter_data['file_id'],
+                        reply_to_message_id=update.message.message_id
+                    )
+                elif filter_data['type'] == 'photo':
+                    await context.bot.send_photo(
+                        chat_id=chat_id,
+                        photo=filter_data['file_id'],
+                        caption=filter_data['content'] if filter_data['content'] else None,
+                        reply_to_message_id=update.message.message_id
+                    )
+                elif filter_data['type'] == 'video':
+                    await context.bot.send_video(
+                        chat_id=chat_id,
+                        video=filter_data['file_id'],
+                        caption=filter_data['content'] if filter_data['content'] else None,
+                        reply_to_message_id=update.message.message_id
+                    )
+                elif filter_data['type'] == 'document':
+                    await context.bot.send_document(
+                        chat_id=chat_id,
+                        document=filter_data['file_id'],
+                        caption=filter_data['content'] if filter_data['content'] else None,
+                        reply_to_message_id=update.message.message_id
+                    )
+                elif filter_data['type'] == 'animation':
+                    await context.bot.send_animation(
+                        chat_id=chat_id,
+                        animation=filter_data['file_id'],
+                        caption=filter_data['content'] if filter_data['content'] else None,
+                        reply_to_message_id=update.message.message_id
+                    )
+                logger.info(f"Filter response sent successfully")
+            except Exception as e:
+                logger.error(f"Error sending filter response: {e}", exc_info=True)
+            
+            # Only trigger once per message (first match)
+            break
+    
+    if not triggered:
+        logger.info(f"No filter matched for message: '{message_text}'")
     
     # Now handle self-destruct if enabled
     from handlers import handle_self_destruct_message
