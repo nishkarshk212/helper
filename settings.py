@@ -988,6 +988,48 @@ async def _preview_welcome_message(query, context, chat_id):
     )
 
 
+async def _show_welcome_preview_after_save(update, context, chat_id):
+    """Show complete preview after saving welcome message - sends as new message"""
+    settings = get_or_create_group(chat_id)
+    
+    # Build preview text
+    preview_text = f"✅ Welcome Message Saved!\n\n"
+    preview_text += f"📝 Type: {settings.welcome_type.capitalize()}\n\n"
+    
+    if settings.welcome_type == "text":
+        preview_text += f"💬 Message:\n{settings.welcome_message or '(No message set)'}\n\n"
+    else:
+        preview_text += f"🖼️ Media Type: {settings.welcome_type}\n"
+        preview_text += f"📄 Caption: {settings.welcome_caption or '(No caption)'}\n\n"
+    
+    # Show buttons if any
+    try:
+        buttons_data = json.loads(settings.welcome_buttons)
+        if buttons_data:
+            preview_text += f"🔘 Buttons ({len(buttons_data)}):\n"
+            for btn in buttons_data:
+                preview_text += f"  • {btn.get('text', 'N/A')} → {btn.get('url', 'N/A')}\n"
+        else:
+            preview_text += "🔘 Buttons: None\n"
+    except:
+        preview_text += "🔘 Buttons: Error loading\n"
+    
+    preview_text += f"\nℹ️ Note: {{user}} will be replaced with the actual member's name when sent"
+    
+    keyboard = [
+        [InlineKeyboardButton("🔘 Add/Edit Buttons", callback_data="add_welcome_buttons"),
+         InlineKeyboardButton("👁️ Preview Again", callback_data="preview_welcome")],
+        [InlineKeyboardButton("⬅️ Back to Settings", callback_data="welcome_settings")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        to_monospace_uppercase(preview_text),
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+
+
 async def handle_welcome_message_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle new welcome message input (text)"""
     is_waiting = context.user_data.get('waiting_for_welcome_msg')
@@ -1008,19 +1050,8 @@ async def handle_welcome_message_input(update: Update, context: ContextTypes.DEF
         chat_id = update.effective_chat.id
         update_group_setting(chat_id, welcome_message=new_message)
         
-        # Ask about buttons
-        keyboard = [
-            [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons"),
-             InlineKeyboardButton("Skip", callback_data="skip_welcome_buttons")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            to_monospace_uppercase(
-                "Welcome message text saved!\n\n"
-                "Would you like to add inline buttons?"
-            ),
-            reply_markup=reply_markup
-        )
+        # Show complete preview with media, text, and buttons
+        await _show_welcome_preview_after_save(update, context, chat_id)
         context.user_data['waiting_for_welcome_msg'] = False
     except Exception as e:
         logger.error(f"Error in handle_welcome_message_input: {e}", exc_info=True)
@@ -1140,16 +1171,8 @@ async def handle_caption_input(update: Update, context: ContextTypes.DEFAULT_TYP
         
         update_group_setting(chat_id, welcome_message=caption)
         
-        # Ask about buttons
-        keyboard = [
-            [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons"),
-             InlineKeyboardButton("Skip", callback_data="skip_welcome_buttons")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            "Caption saved!\n\nWould you like to add inline buttons?",
-            reply_markup=reply_markup
-        )
+        # Show complete preview with media, text, and buttons
+        await _show_welcome_preview_after_save(update, context, chat_id)
         context.user_data['waiting_for_welcome_caption'] = False
     
     # Handle goodbye caption
