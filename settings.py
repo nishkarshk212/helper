@@ -493,11 +493,7 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
                 )
             ],
             [
-                InlineKeyboardButton("Set Hours", callback_data="set_destruct_hours"),
-                InlineKeyboardButton("Set Minutes", callback_data="set_destruct_minutes")
-            ],
-            [
-                InlineKeyboardButton("Set Seconds", callback_data="set_destruct_seconds")
+                InlineKeyboardButton("⏱️ Set Delete Time", callback_data="set_destruct_time")
             ],
             [
                 InlineKeyboardButton("⬅️ Back", callback_data="back_to_settings")
@@ -505,48 +501,55 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            f"<b>💥 Self-Destruct Messages Settings</b>\n\n"
-            f"Self-destruct messages {'enabled' if new_state else 'disabled'}.\n\n"
-            f"<b>Current delete time:</b> {time_str}\n\n"
-            f"<b>⚠️ WARNING:</b> This will delete <b>ALL messages</b> from <b>EVERYONE</b> "
-            f"(owner, admins & members) after the set time. No exceptions!",
+            to_monospace_uppercase(
+                f"💥 Self-Destruct Messages Settings\n\n"
+                f"Self-destruct messages {'enabled' if new_state else 'disabled'}.\n\n"
+                f"Current delete time: {time_str}\n\n"
+                f"⚠️ WARNING: This will delete ALL messages from EVERYONE "
+                f"(owner, admins & members) after the set time. No exceptions!"
+            ),
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
     
-    elif action == "set_destruct_hours":
+    elif action == "set_destruct_time":
+        # Show time setting panel with +/- buttons
+        hours = settings.destruct_hours
+        minutes = settings.destruct_minutes
+        seconds = settings.destruct_seconds
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("➖", callback_data=f"destruct_hours_-1"),
+                InlineKeyboardButton(f"Hours: {hours}", callback_data="noop"),
+                InlineKeyboardButton("➕", callback_data=f"destruct_hours_+1")
+            ],
+            [
+                InlineKeyboardButton("➖", callback_data=f"destruct_minutes_-1"),
+                InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop"),
+                InlineKeyboardButton("➕", callback_data=f"destruct_minutes_+1")
+            ],
+            [
+                InlineKeyboardButton("➖", callback_data=f"destruct_seconds_-5"),
+                InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop"),
+                InlineKeyboardButton("➕", callback_data=f"destruct_seconds_+5")
+            ],
+            [
+                InlineKeyboardButton("✅ Done", callback_data="destruct_time_done"),
+                InlineKeyboardButton("⬅️ Back", callback_data="self_destruct_settings")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            "<b>Set Self-Destruct Hours</b>\n\n"
-            "Send the number of hours (0-23):\n"
-            "Example: <code>2</code> for 2 hours\n\n"
-            "Send /cancel to abort or /skip for 0 hours.",
-            parse_mode='HTML',
-            reply_markup=None
+            to_monospace_uppercase(
+                f"⏱️ Set Self-Destruct Time\n\n"
+                f"Use + / - buttons to adjust:\n\n"
+                f"Minimum recommended: 5 seconds\n"
+                f"Maximum: 23 hours, 59 minutes, 59 seconds"
+            ),
+            reply_markup=reply_markup,
+            parse_mode='HTML'
         )
-        context.user_data['waiting_for_destruct_hours'] = True
-    
-    elif action == "set_destruct_minutes":
-        await query.edit_message_text(
-            "<b>Set Self-Destruct Minutes</b>\n\n"
-            "Send the number of minutes (0-59):\n"
-            "Example: <code>30</code> for 30 minutes\n\n"
-            "Send /cancel to abort or /skip for 0 minutes.",
-            parse_mode='HTML',
-            reply_markup=None
-        )
-        context.user_data['waiting_for_destruct_minutes'] = True
-    
-    elif action == "set_destruct_seconds":
-        await query.edit_message_text(
-            "<b>Set Self-Destruct Seconds</b>\n\n"
-            "Send the number of seconds (5-59):\n"
-            "Example: <code>30</code> for 30 seconds\n\n"
-            "<i>Minimum 5 seconds recommended.</i>\n\n"
-            "Send /cancel to abort or /skip for default 30 seconds.",
-            parse_mode='HTML',
-            reply_markup=None
-        )
-        context.user_data['waiting_for_destruct_seconds'] = True
     
     elif action == "clean_service_settings":
         keyboard = [
@@ -773,6 +776,35 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
             parse_mode='HTML'
         )
     
+    # Handle destruct time +/- buttons
+    elif action.startswith("destruct_hours_"):
+        change = int(action.split("_")[-1])
+        new_hours = max(0, min(23, settings.destruct_hours + change))
+        update_group_setting(chat_id, destruct_hours=new_hours)
+        await _show_destruct_time_panel(query, context, chat_id)
+    
+    elif action.startswith("destruct_minutes_"):
+        change = int(action.split("_")[-1])
+        new_minutes = max(0, min(59, settings.destruct_minutes + change))
+        update_group_setting(chat_id, destruct_minutes=new_minutes)
+        await _show_destruct_time_panel(query, context, chat_id)
+    
+    elif action.startswith("destruct_seconds_"):
+        change = int(action.split("_")[-1])
+        new_seconds = max(5, min(59, settings.destruct_seconds + change))
+        update_group_setting(chat_id, destruct_seconds=new_seconds)
+        await _show_destruct_time_panel(query, context, chat_id)
+    
+    elif action == "destruct_time_done":
+        await query.edit_message_text(
+            to_monospace_uppercase(
+                f"✅ Self-destruct time updated!\n\n"
+                f"Messages will be deleted after:\n"
+                f"{settings.destruct_hours}h {settings.destruct_minutes}m {settings.destruct_seconds}s"
+            ),
+            reply_markup=None
+        )
+    
     elif action == "back_to_settings":
         await show_settings_panel_from_callback(query, context, settings)
     
@@ -817,6 +849,47 @@ async def show_settings_panel_from_callback(query, context, settings):
     )
     
     await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='HTML')
+
+
+async def _show_destruct_time_panel(query, context, chat_id):
+    """Show the destruct time setting panel with current values"""
+    settings = get_or_create_group(chat_id)
+    hours = settings.destruct_hours
+    minutes = settings.destruct_minutes
+    seconds = settings.destruct_seconds
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("➖", callback_data=f"destruct_hours_-1"),
+            InlineKeyboardButton(f"Hours: {hours}", callback_data="noop"),
+            InlineKeyboardButton("➕", callback_data=f"destruct_hours_+1")
+        ],
+        [
+            InlineKeyboardButton("➖", callback_data=f"destruct_minutes_-1"),
+            InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop"),
+            InlineKeyboardButton("➕", callback_data=f"destruct_minutes_+1")
+        ],
+        [
+            InlineKeyboardButton("➖", callback_data=f"destruct_seconds_-5"),
+            InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop"),
+            InlineKeyboardButton("➕", callback_data=f"destruct_seconds_+5")
+        ],
+        [
+            InlineKeyboardButton("✅ Done", callback_data="destruct_time_done"),
+            InlineKeyboardButton("⬅️ Back", callback_data="self_destruct_settings")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        to_monospace_uppercase(
+            f"⏱️ Set Self-Destruct Time\n\n"
+            f"Use + / - buttons to adjust:\n\n"
+            f"Minimum recommended: 5 seconds\n"
+            f"Maximum: 23 hours, 59 minutes, 59 seconds"
+        ),
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
 
 
 async def handle_welcome_message_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
