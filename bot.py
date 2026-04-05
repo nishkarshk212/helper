@@ -246,7 +246,13 @@ def main():
         handle_self_destruct_time_input
     ))
     
-    # Blocked words checker (after state handlers)
+    # Register filter checker (before blocked words to ensure it runs)
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        check_filters
+    ))
+    
+    # Blocked words checker (after filters)
     application.add_handler(MessageHandler(
         filters.TEXT | filters.CAPTION,
         check_blocked_words
@@ -255,12 +261,6 @@ def main():
     application.add_handler(MessageHandler(
         filters.PHOTO | filters.VIDEO | filters.Document.ALL,
         handle_media_message
-    ))
-    
-    # Register filter checker (for all text messages not handled above)
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        check_filters
     ))
     
     application.add_handler(MessageHandler(
