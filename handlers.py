@@ -4,6 +4,7 @@ Group management features: welcome messages, anti-spam, anti-flood, etc.
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database import get_or_create_group
+from font import to_monospace_uppercase
 import time
 import json
 import asyncio

@@ -27,6 +27,7 @@ from settings import (
     handle_button_input,
     handle_self_destruct_time_input
 )
+from font import to_monospace_uppercase
 from handlers import (
     handle_new_member,
     handle_left_member,
@@ -79,12 +80,16 @@ async def start(update: Update, context):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text(
+    message_text = to_monospace_uppercase(
         "👋 Hi! I'm a Group Management Bot.\n\n"
         "Add me to your group and use /settings to configure group settings.\n\n"
-        "<b>Available commands:</b>\n"
+        "Available commands:\n"
         "/settings - Open group settings panel\n"
-        "/help - Show help message",
+        "/help - Show help message"
+    )
+    
+    await update.message.reply_text(
+        message_text,
         parse_mode='HTML',
         reply_markup=reply_markup
     )
@@ -92,36 +97,36 @@ async def start(update: Update, context):
 
 async def help_command(update: Update, context):
     """Send a message when the command /help is issued."""
-    await update.message.reply_text(
-        "<b>Group Management Bot Help</b>\n\n"
-        "<b>Commands:</b>\n"
+    message_text = to_monospace_uppercase(
+        "Group Management Bot Help\n\n"
+        "Commands:\n"
         "/settings - Open the settings panel (admins only)\n"
         "/help - Show this help message\n\n"
-        "<b>User Management (Creator):</b>\n"
+        "User Management (Creator):\n"
         "/ban - Ban a user (reply to message)\n"
         "/warn - Warn a user (3 warnings = auto-ban)\n"
         "/mute - Mute a user (no messages)\n"
         "/unmute - Unmute a user\n"
         "/promote - Promote user with custom permissions (toggle buttons)\n"
         "/demote - Remove admin privileges from a user\n\n"
-        "<b>User Info:</b>\n"
+        "User Info:\n"
         "/id - Get user ID (reply to message or use user ID)\n"
         "/info - Get detailed user information (reply to message)\n"
         "/admins - List all custom admins with permissions\n\n"
-        "<b>Content Moderation:</b>\n"
+        "Content Moderation:\n"
         "/blockword <word> - Block a word/phrase (deletes messages containing it)\n"
         "/unblockword <word> - Remove a blocked word\n"
         "/blockedwords - List all blocked words\n\n"
-        "<b>Filters (Auto-reply):</b>\n"
-        "/filter &lt;trigger&gt; - Add filter (reply to message with content)\n"
+        "Filters (Auto-reply):\n"
+        "/filter <trigger> - Add filter (reply to message with content)\n"
         "/filters - List all chat filters\n"
-        "/stop &lt;trigger&gt; - Remove a filter\n"
+        "/stop <trigger> - Remove a filter\n"
         "/stopall - Remove ALL filters (creator only)\n\n"
-        "<b>Filter Examples:</b>\n"
+        "Filter Examples:\n"
         "1. Send photo/video/sticker/text\n"
-        "2. Reply to it with: <code>/filter trigger</code>\n"
+        "2. Reply to it with: /filter trigger\n"
         "3. When someone types 'trigger', bot replies with your content!\n\n"
-        "<b>Features:</b>\n"
+        "Features:\n"
         "• Custom welcome messages (text, photo, video, document)\n"
         "• Custom goodbye messages (text, photo, video, document)\n"
         "• Inline buttons for welcome/goodbye messages\n"
@@ -130,7 +135,11 @@ async def help_command(update: Update, context):
         "• User management (ban, warn, mute, promote, demote)\n"
         "• Custom admin roles with permission control via toggle buttons\n"
         "• Smart filters (auto-reply to keywords with any content)\n\n"
-        "To configure settings, use /settings in your group.",
+        "To configure settings, use /settings in your group."
+    )
+    
+    await update.message.reply_text(
+        message_text,
         parse_mode='HTML'
     )
 
