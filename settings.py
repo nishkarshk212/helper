@@ -960,7 +960,7 @@ async def _preview_welcome_message(query, context, chat_id):
         preview_text += f"Message:\n{settings.welcome_message or '(No message set)'}\n\n"
     else:
         preview_text += f"Media Type: {settings.welcome_type}\n"
-        preview_text += f"Caption: {settings.welcome_caption or '(No caption)'}\n\n"
+        preview_text += f"Caption: {settings.welcome_message or '(No caption)'}\n\n"
     
     # Show buttons if any
     try:
@@ -1000,7 +1000,7 @@ async def _show_welcome_preview_after_save(update, context, chat_id):
         preview_text += f"💬 Message:\n{settings.welcome_message or '(No message set)'}\n\n"
     else:
         preview_text += f"🖼️ Media Type: {settings.welcome_type}\n"
-        preview_text += f"📄 Caption: {settings.welcome_caption or '(No caption)'}\n\n"
+        preview_text += f"📄 Caption: {settings.welcome_message or '(No caption)'}\n\n"
     
     # Show buttons if any
     try:

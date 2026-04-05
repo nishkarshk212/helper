@@ -31,7 +31,13 @@ async def handle_new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
             continue
         
         user_mention = new_member.mention_html()
-        welcome_msg = settings.welcome_message.format(user=user_mention)
+        
+        # Safely format the welcome message, replacing {user} placeholder
+        try:
+            welcome_msg = settings.welcome_message.replace('{user}', user_mention)
+        except Exception as e:
+            logger.error(f"Error formatting welcome message: {e}")
+            welcome_msg = settings.welcome_message  # Use raw message if formatting fails
         
         # Parse buttons
         buttons = []
@@ -109,7 +115,13 @@ async def handle_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
     
     user_mention = left_member.mention_html()
-    goodbye_msg = settings.goodbye_message.format(user=user_mention)
+    
+    # Safely format the goodbye message, replacing {user} placeholder
+    try:
+        goodbye_msg = settings.goodbye_message.replace('{user}', user_mention)
+    except Exception as e:
+        logger.error(f"Error formatting goodbye message: {e}")
+        goodbye_msg = settings.goodbye_message  # Use raw message if formatting fails
     
     # Parse buttons
     buttons = []
