@@ -821,7 +821,7 @@ async def handle_welcome_message_input(update: Update, context: ContextTypes.DEF
     new_message = update.message.text
     
     if new_message == "/cancel":
-        await update.message.reply_text("Cancelled.")
+        await update.message.reply_text(to_monospace_uppercase("Cancelled."))
         context.user_data['waiting_for_welcome_msg'] = False
         return
     
@@ -835,8 +835,10 @@ async def handle_welcome_message_input(update: Update, context: ContextTypes.DEF
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Welcome message text saved!\n\n"
-        "Would you like to add inline buttons?",
+        to_monospace_uppercase(
+            "Welcome message text saved!\n\n"
+            "Would you like to add inline buttons?"
+        ),
         reply_markup=reply_markup
     )
     context.user_data['waiting_for_welcome_msg'] = False
@@ -850,7 +852,7 @@ async def handle_goodbye_message_input(update: Update, context: ContextTypes.DEF
     new_message = update.message.text
     
     if new_message == "/cancel":
-        await update.message.reply_text("Cancelled.")
+        await update.message.reply_text(to_monospace_uppercase("Cancelled."))
         context.user_data['waiting_for_goodbye_msg'] = False
         return
     
@@ -864,8 +866,10 @@ async def handle_goodbye_message_input(update: Update, context: ContextTypes.DEF
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Goodbye message text saved!\n\n"
-        "Would you like to add inline buttons?",
+        to_monospace_uppercase(
+            "Goodbye message text saved!\n\n"
+            "Would you like to add inline buttons?"
+        ),
         reply_markup=reply_markup
     )
     context.user_data['waiting_for_goodbye_msg'] = False

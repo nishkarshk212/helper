@@ -215,22 +215,8 @@ def main():
         handle_media_message
     ))
     
-    # Register filter checker FIRST (before other text handlers)
-    # This also handles self-destruct messages
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        check_filters
-    ))
-    application.add_handler(MessageHandler(
-        filters.StatusUpdate.ALL,
-        clean_service_messages
-    ))
-    
-    # Register filter checker (for all text messages)
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        check_filters
-    ))
+    # Register state-based handlers FIRST (before general text handlers)
+    # These check user_data state and return early if not in that state
     application.add_handler(MessageHandler(
         filters.TEXT & ~filters.COMMAND, 
         handle_welcome_message_input
@@ -250,6 +236,17 @@ def main():
     application.add_handler(MessageHandler(
         filters.TEXT & ~filters.COMMAND,
         handle_self_destruct_time_input
+    ))
+    
+    # Register filter checker (for all text messages not handled above)
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        check_filters
+    ))
+    
+    application.add_handler(MessageHandler(
+        filters.StatusUpdate.ALL,
+        clean_service_messages
     ))
     
     # Register error handler
