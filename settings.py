@@ -510,17 +510,17 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
         keyboard = [
             [
                 InlineKeyboardButton("➖", callback_data=f"destruct_hours_-1"),
-                InlineKeyboardButton(f"Hours: {hours}", callback_data="noop"),
+                InlineKeyboardButton(f"Hours: {hours}", callback_data="noop_hours"),
                 InlineKeyboardButton("➕", callback_data=f"destruct_hours_+1")
             ],
             [
                 InlineKeyboardButton("➖", callback_data=f"destruct_minutes_-1"),
-                InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop"),
+                InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop_minutes"),
                 InlineKeyboardButton("➕", callback_data=f"destruct_minutes_+1")
             ],
             [
                 InlineKeyboardButton("➖", callback_data=f"destruct_seconds_-5"),
-                InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop"),
+                InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop_seconds"),
                 InlineKeyboardButton("➕", callback_data=f"destruct_seconds_+5")
             ],
             [

@@ -213,6 +213,7 @@ async def handle_stopall_filters(update: Update, context: ContextTypes.DEFAULT_T
 async def check_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Check if message triggers any filter"""
     if not update.effective_chat or not update.message or not update.message.text:
+        logger.debug("check_filters: No message or text")
         return
     
     chat_id = update.effective_chat.id
@@ -220,10 +221,14 @@ async def check_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         filters = json.loads(settings.chat_filters)
-    except:
+    except Exception as e:
+        logger.error(f"Error loading filters: {e}")
         return
     
+    logger.info(f"check_filters called for chat {chat_id}, filters count: {len(filters)}")
+    
     if not filters:
+        logger.debug("No filters configured")
         return
     
     message_text = update.message.text.lower().strip()

@@ -6,6 +6,9 @@ from telegram.ext import ContextTypes
 from database import get_or_create_group, update_group_setting
 from font import to_monospace_uppercase
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_blockword_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -162,6 +165,7 @@ async def check_blocked_words(update: Update, context: ContextTypes.DEFAULT_TYPE
                     break
     
     # Now check filters (so both blocked words AND filters work)
+    logger.info("Calling check_filters from blocked_words handler")
     from filters import check_filters
     await check_filters(update, context)
 
