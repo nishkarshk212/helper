@@ -161,40 +161,10 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
     if action == "toggle_welcome":
         new_state = not settings.welcome_enabled
         update_group_setting(chat_id, welcome_enabled=new_state)
-        
-        # Refresh the welcome settings panel
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    f"{'✅' if new_state else '❌'} Enable/Disable Welcome",
-                    callback_data="toggle_welcome"
-                )
-            ],
-            [
-                InlineKeyboardButton("📝 Edit Welcome Message", callback_data="edit_welcome_msg")
-            ],
-            [
-                InlineKeyboardButton("⬅️ Back to Settings", callback_data="back_to_settings")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        msg_type = settings.welcome_type.capitalize()
-        buttons_count = 0
-        try:
-            buttons_data = json.loads(settings.welcome_buttons)
-            buttons_count = len(buttons_data)
-        except:
-            pass
-        
-        await query.edit_message_text(
-            f"<b>Welcome Message Settings</b>\n\n"
-            f"Welcome messages {'enabled' if new_state else 'disabled'}.\n\n"
-            f"<b>Type:</b> {msg_type}\n"
-            f"<b>Buttons:</b> {buttons_count} button(s)",
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
+        await _show_welcome_settings_panel(query, context, chat_id)
+    
+    elif action == "welcome_settings":
+        await _show_welcome_settings_panel(query, context, chat_id)
     
     elif action == "toggle_goodbye":
         new_state = not settings.goodbye_enabled
@@ -235,30 +205,8 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
         )
     
     elif action == "edit_welcome_msg":
-        keyboard = [
-            [InlineKeyboardButton("Text", callback_data="welcome_type_text"),
-             InlineKeyboardButton("Photo", callback_data="welcome_type_photo")],
-            [InlineKeyboardButton("Video", callback_data="welcome_type_video"),
-             InlineKeyboardButton("Document", callback_data="welcome_type_document")],
-            [InlineKeyboardButton("🔘 Configure Buttons", callback_data="configure_welcome_buttons")],
-            [InlineKeyboardButton("⬅️ Back", callback_data="welcome_settings")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        current_type = settings.welcome_type.capitalize()
-        buttons_count = 0
-        try:
-            buttons_data = json.loads(settings.welcome_buttons)
-            buttons_count = len(buttons_data)
-        except:
-            pass
-        await query.edit_message_text(
-            f"<b>Welcome Message Configuration</b>\n\n"
-            f"<b>Current type:</b> {current_type}\n"
-            f"<b>Current buttons:</b> {buttons_count} button(s)\n\n"
-            f"Select message type or configure buttons:",
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
+        # Redirect to new welcome settings panel
+        await _show_welcome_settings_panel(query, context, chat_id)
     
     elif action == "edit_goodbye_msg":
         keyboard = [
@@ -332,17 +280,7 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
     
     elif action == "remove_welcome_buttons":
         update_group_setting(chat_id, welcome_buttons="[]")
-        keyboard = [
-            [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons")],
-            [InlineKeyboardButton("⬅️ Back", callback_data="configure_welcome_buttons")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            f"✅ All welcome message buttons removed!\n\n"
-            f"Would you like to add new buttons?",
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
+        await _show_welcome_settings_panel(query, context, chat_id)
     
     elif action == "remove_goodbye_buttons":
         update_group_setting(chat_id, goodbye_buttons="[]")
@@ -374,20 +312,71 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
             context.user_data['waiting_for_welcome_msg'] = True
             logger.info(f"Set waiting_for_welcome_msg=True for user {query.from_user.id}")
         else:
+            # For media types, prompt for media upload
             media_names = {
                 'photo': 'photo/image',
                 'video': 'video',
                 'document': 'document/file'
             }
             await query.edit_message_text(
-                f"Please send the {media_names.get(msg_type, 'media')} for welcome message.\n"
-                f"After sending the media, send the caption text (or /skip for no caption).\n"
-                f"Use {{user}} to mention the new member.\n"
-                f"Send /cancel to abort.",
+                to_monospace_uppercase(
+                    f"Please send the {media_names.get(msg_type, 'media')} for welcome message.\n\n"
+                    f"After sending the media, send the caption text (or /skip for no caption).\n"
+                    f"Use {{user}} to mention the new member.\n"
+                    f"Send /cancel to abort."
+                ),
                 reply_markup=None
             )
             context.user_data['waiting_for_welcome_media'] = True
             context.user_data['welcome_media_type'] = msg_type
+    
+    elif action == "welcome_media_menu":
+        # Show media selection menu
+        keyboard = [
+            [InlineKeyboardButton("🖼️ Photo", callback_data="welcome_type_photo"),
+             InlineKeyboardButton("🎥 Video", callback_data="welcome_type_video")],
+            [InlineKeyboardButton("📄 Document", callback_data="welcome_type_document")],
+            [InlineKeyboardButton("⬅️ Back", callback_data="welcome_settings")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            to_monospace_uppercase(
+                f"🖼️ Select Media Type for Welcome Message\n\n"
+                f"Current Type: {settings.welcome_type.capitalize()}\n\n"
+                f"Choose the type of media to use:"
+            ),
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+    
+    elif action == "view_welcome_buttons":
+        # Show current buttons
+        buttons_count = 0
+        try:
+            buttons_data = json.loads(settings.welcome_buttons)
+            buttons_count = len(buttons_data)
+        except:
+            pass
+        
+        keyboard = [
+            [InlineKeyboardButton("Add/Edit Buttons", callback_data="add_welcome_buttons")],
+            [InlineKeyboardButton("Remove All Buttons", callback_data="remove_welcome_buttons")],
+            [InlineKeyboardButton("⬅️ Back", callback_data="welcome_settings")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            to_monospace_uppercase(
+                f"🔘 Welcome Message Buttons\n\n"
+                f"Current buttons: {buttons_count}\n\n"
+                f"You can add, edit, or remove inline buttons for welcome messages."
+            ),
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+    
+    elif action == "preview_welcome":
+        # Show preview of welcome message
+        await _preview_welcome_message(query, context, chat_id)
     
     elif action.startswith("goodbye_type_"):
         msg_type = action.split("_")[-1]
@@ -892,6 +881,98 @@ async def _show_destruct_time_panel(query, context, chat_id):
     )
 
 
+async def _show_welcome_settings_panel(query, context, chat_id):
+    """Show welcome message settings panel with clean structure"""
+    settings = get_or_create_group(chat_id)
+    
+    # Get button count
+    buttons_count = 0
+    try:
+        buttons_data = json.loads(settings.welcome_buttons)
+        buttons_count = len(buttons_data)
+    except:
+        pass
+    
+    msg_type = settings.welcome_type.capitalize()
+    
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                f"{'✅' if settings.welcome_enabled else '❌'} Enable/Disable",
+                callback_data="toggle_welcome"
+            )
+        ],
+        [
+            InlineKeyboardButton("📝 Text", callback_data="welcome_type_text"),
+            InlineKeyboardButton("🖼️ Media", callback_data="welcome_media_menu")
+        ],
+        [
+            InlineKeyboardButton("🔘 Add Button", callback_data="add_welcome_buttons"),
+            InlineKeyboardButton(f"Buttons ({buttons_count})", callback_data="view_welcome_buttons")
+        ],
+        [
+            InlineKeyboardButton("👁️ Preview", callback_data="preview_welcome")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Back", callback_data="back_to_settings")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    status_text = "Enabled" if settings.welcome_enabled else "Disabled"
+    await query.edit_message_text(
+        to_monospace_uppercase(
+            f"📝 Welcome Message Settings\n\n"
+            f"Status: {status_text}\n"
+            f"Current Type: {msg_type}\n"
+            f"Buttons: {buttons_count}\n\n"
+            f"Configure your welcome message below:"
+        ),
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+
+
+async def _preview_welcome_message(query, context, chat_id):
+    """Show a preview of the welcome message"""
+    settings = get_or_create_group(chat_id)
+    
+    # Build preview text
+    preview_text = f"👁️ Welcome Message Preview\n\n"
+    preview_text += f"Type: {settings.welcome_type.capitalize()}\n\n"
+    
+    if settings.welcome_type == "text":
+        preview_text += f"Message:\n{settings.welcome_message or '(No message set)'}\n\n"
+    else:
+        preview_text += f"Media Type: {settings.welcome_type}\n"
+        preview_text += f"Caption: {settings.welcome_caption or '(No caption)'}\n\n"
+    
+    # Show buttons if any
+    try:
+        buttons_data = json.loads(settings.welcome_buttons)
+        if buttons_data:
+            preview_text += f"Buttons ({len(buttons_data)}):\n"
+            for btn in buttons_data:
+                preview_text += f"• {btn.get('text', 'N/A')} -> {btn.get('url', 'N/A')}\n"
+        else:
+            preview_text += "Buttons: None\n"
+    except:
+        preview_text += "Buttons: Error loading\n"
+    
+    preview_text += f"\nNote: {{user}} will be replaced with the actual member's name"
+    
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Back", callback_data="welcome_settings")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        to_monospace_uppercase(preview_text),
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+
+
 async def handle_welcome_message_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle new welcome message input (text)"""
     is_waiting = context.user_data.get('waiting_for_welcome_msg')
@@ -1115,17 +1196,7 @@ async def handle_button_callback(update: Update, context: ContextTypes.DEFAULT_T
     
     elif action == "skip_welcome_buttons":
         update_group_setting(chat_id, welcome_buttons="[]")
-        keyboard = [
-            [InlineKeyboardButton("Add Buttons", callback_data="add_welcome_buttons")],
-            [InlineKeyboardButton("⬅️ Back", callback_data="configure_welcome_buttons")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(
-            "✅ Welcome message configuration complete!\n\n"
-            "No buttons will be added.\n\n"
-            "Would you like to add buttons now?",
-            reply_markup=reply_markup
-        )
+        await _show_welcome_settings_panel(query, context, chat_id)
         context.user_data.pop('waiting_for_welcome_buttons', None)
     
     elif action == "add_goodbye_buttons":
@@ -1193,26 +1264,28 @@ async def handle_button_input(update: Update, context: ContextTypes.DEFAULT_TYPE
             buttons_json = json.dumps(buttons)
             update_group_setting(chat_id, welcome_buttons=buttons_json)
             keyboard = [
-                [InlineKeyboardButton("Add More Buttons", callback_data="add_welcome_buttons")],
-                [InlineKeyboardButton("✅ Done", callback_data="configure_welcome_buttons")]
+                [InlineKeyboardButton("⬅️ Back to Settings", callback_data="welcome_settings")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await update.message.reply_text(
-                f"✅ Welcome message buttons saved!\n\n"
-                f"Added {len(buttons)} button(s).\n\n"
-                f"What would you like to do next?",
+                to_monospace_uppercase(
+                    f"✅ Welcome message buttons saved!\n\n"
+                    f"Added {len(buttons)} button(s)."
+                ),
                 reply_markup=reply_markup
             )
         else:
             keyboard = [
                 [InlineKeyboardButton("Try Again", callback_data="add_welcome_buttons")],
-                [InlineKeyboardButton("⬅️ Back", callback_data="configure_welcome_buttons")]
+                [InlineKeyboardButton("⬅️ Back", callback_data="welcome_settings")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await update.message.reply_text(
-                "⚠️ No valid buttons found. Please use the format:\n"
-                "<code>Button Text - URL</code>\n\n"
-                "Would you like to try again?",
+                to_monospace_uppercase(
+                    "⚠️ No valid buttons found. Please use the format:\n"
+                    "Button Text - URL\n\n"
+                    "Would you like to try again?"
+                ),
                 parse_mode='HTML',
                 reply_markup=reply_markup
             )
