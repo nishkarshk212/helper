@@ -184,6 +184,8 @@ def get_or_create_group(chat_id):
             settings = GroupSettings(chat_id=str(chat_id))
             session.add(settings)
             session.commit()
+        # Expunge the object from the session so it can be used after session closes
+        session.expunge(settings)
         return settings
     finally:
         session.close()
