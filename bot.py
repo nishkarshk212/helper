@@ -223,17 +223,6 @@ def main():
         handle_left_member
     ))
     
-    # Blocked words checker (MUST be before other text handlers)
-    application.add_handler(MessageHandler(
-        filters.TEXT | filters.CAPTION,
-        check_blocked_words
-    ))
-    
-    application.add_handler(MessageHandler(
-        filters.PHOTO | filters.VIDEO | filters.Document.ALL,
-        handle_media_message
-    ))
-    
     # Register state-based handlers FIRST (before general text handlers)
     # These check user_data state and return early if not in that state
     application.add_handler(MessageHandler(
@@ -255,6 +244,17 @@ def main():
     application.add_handler(MessageHandler(
         filters.TEXT & ~filters.COMMAND,
         handle_self_destruct_time_input
+    ))
+    
+    # Blocked words checker (after state handlers)
+    application.add_handler(MessageHandler(
+        filters.TEXT | filters.CAPTION,
+        check_blocked_words
+    ))
+    
+    application.add_handler(MessageHandler(
+        filters.PHOTO | filters.VIDEO | filters.Document.ALL,
+        handle_media_message
     ))
     
     # Register filter checker (for all text messages not handled above)

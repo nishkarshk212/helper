@@ -767,22 +767,37 @@ async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT
     
     # Handle destruct time +/- buttons
     elif action.startswith("destruct_hours_"):
-        change = int(action.split("_")[-1])
-        new_hours = max(0, min(23, settings.destruct_hours + change))
-        update_group_setting(chat_id, destruct_hours=new_hours)
-        await _show_destruct_time_panel(query, context, chat_id)
+        try:
+            change = int(action.split("_")[-1])
+            new_hours = max(0, min(23, settings.destruct_hours + change))
+            update_group_setting(chat_id, destruct_hours=new_hours)
+            logger.info(f"Destruct hours changed to {new_hours}")
+            await _show_destruct_time_panel(query, context, chat_id)
+        except Exception as e:
+            logger.error(f"Error changing destruct hours: {e}", exc_info=True)
+            await query.answer("Error updating hours", show_alert=True)
     
     elif action.startswith("destruct_minutes_"):
-        change = int(action.split("_")[-1])
-        new_minutes = max(0, min(59, settings.destruct_minutes + change))
-        update_group_setting(chat_id, destruct_minutes=new_minutes)
-        await _show_destruct_time_panel(query, context, chat_id)
+        try:
+            change = int(action.split("_")[-1])
+            new_minutes = max(0, min(59, settings.destruct_minutes + change))
+            update_group_setting(chat_id, destruct_minutes=new_minutes)
+            logger.info(f"Destruct minutes changed to {new_minutes}")
+            await _show_destruct_time_panel(query, context, chat_id)
+        except Exception as e:
+            logger.error(f"Error changing destruct minutes: {e}", exc_info=True)
+            await query.answer("Error updating minutes", show_alert=True)
     
     elif action.startswith("destruct_seconds_"):
-        change = int(action.split("_")[-1])
-        new_seconds = max(5, min(59, settings.destruct_seconds + change))
-        update_group_setting(chat_id, destruct_seconds=new_seconds)
-        await _show_destruct_time_panel(query, context, chat_id)
+        try:
+            change = int(action.split("_")[-1])
+            new_seconds = max(5, min(59, settings.destruct_seconds + change))
+            update_group_setting(chat_id, destruct_seconds=new_seconds)
+            logger.info(f"Destruct seconds changed to {new_seconds}")
+            await _show_destruct_time_panel(query, context, chat_id)
+        except Exception as e:
+            logger.error(f"Error changing destruct seconds: {e}", exc_info=True)
+            await query.answer("Error updating seconds", show_alert=True)
     
     elif action == "destruct_time_done":
         await query.edit_message_text(
@@ -850,17 +865,17 @@ async def _show_destruct_time_panel(query, context, chat_id):
     keyboard = [
         [
             InlineKeyboardButton("➖", callback_data=f"destruct_hours_-1"),
-            InlineKeyboardButton(f"Hours: {hours}", callback_data="noop"),
+            InlineKeyboardButton(f"Hours: {hours}", callback_data="noop_hours"),
             InlineKeyboardButton("➕", callback_data=f"destruct_hours_+1")
         ],
         [
             InlineKeyboardButton("➖", callback_data=f"destruct_minutes_-1"),
-            InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop"),
+            InlineKeyboardButton(f"Minutes: {minutes}", callback_data="noop_minutes"),
             InlineKeyboardButton("➕", callback_data=f"destruct_minutes_+1")
         ],
         [
             InlineKeyboardButton("➖", callback_data=f"destruct_seconds_-5"),
-            InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop"),
+            InlineKeyboardButton(f"Seconds: {seconds}", callback_data="noop_seconds"),
             InlineKeyboardButton("➕", callback_data=f"destruct_seconds_+5")
         ],
         [
